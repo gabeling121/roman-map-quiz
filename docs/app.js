@@ -1,11 +1,10 @@
 (() => {
   "use strict";
-  const D = window.MAPDATA;
+  const ALL = window.MAPDATA;
   const NS = "http://www.w3.org/2000/svg";
   const svg = document.getElementById("map");
   const panel = document.getElementById("panel");
-  const PLACES = D.places;
-  const byId = Object.fromEntries(PLACES.map(p => [p.id, p]));
+  let D, PLACES, byId, els, pointEls;
   const MASTER = 3; // box level that counts as "mastered"
 
   // ---------------------------------------------------------------- storage
@@ -13,6 +12,8 @@
     get(k, d) { try { const v = localStorage.getItem("rmq_" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { localStorage.setItem("rmq_" + k, JSON.stringify(v)); } catch {} },
   };
+  let mapKey = store.get("map", ALL.order[0]);
+  if (!ALL.maps[mapKey]) mapKey = ALL.order[0];
   let stats = store.get("stats", {});
   const stat = id => (stats[id] ||= { box: 0, right: 0, wrong: 0 });
   function record(id, firstTry) {
@@ -30,6 +31,13 @@
     return e;
   };
 
+  function buildMap() {
+  svg.innerHTML = "";
+  D = ALL.maps[mapKey];
+  PLACES = D.places;
+  byId = Object.fromEntries(PLACES.map(p => [p.id, p]));
+  els = {};
+  pointEls = [];
   const defs = el("defs", {}, svg);
   el("path", { d: D.land, "clip-rule": "evenodd" }, el("clipPath", { id: "landClip" }, defs));
   el("path", { d: D.frame + D.land, "clip-rule": "evenodd" }, el("clipPath", { id: "seaClip" }, defs));
@@ -37,9 +45,10 @@
   el("rect", { width: 12, height: 9, fill: "#dcc79c" }, pat);
   el("path", { d: "M1,8L6,2L11,8", fill: "#b89a66", stroke: "#6e5634", "stroke-width": 0.8 }, pat);
 
-  el("path", { d: D.land, class: "land", "fill-rule": "evenodd" }, svg);
-  if (D.lakes) el("path", { d: D.lakes, class: "lake" }, svg);
-  el("path", { d: D.rivers, class: "bgriver" }, svg);
+  el("rect", { x: 0, y: 0, width: D.w, height: D.h }, el("clipPath", { id: "frameClip" }, defs));
+  el("path", { d: D.land, class: "land", "fill-rule": "evenodd", "clip-path": "url(#frameClip)" }, svg);
+  if (D.lakes) el("path", { d: D.lakes, class: "lake", "clip-path": "url(#frameClip)" }, svg);
+  el("path", { d: D.rivers, class: "bgriver", "clip-path": "url(#frameClip)" }, svg);
   const decor = el("g", {}, svg);
   for (const d of D.decor) {
     const t = el("text", { x: d.at[0], y: d.at[1], "text-anchor": "middle", class: "decor " + d.k }, decor);
@@ -47,8 +56,6 @@
   }
 
   const layers = { sea: el("g", {}, svg), area: el("g", {}, svg), mount: el("g", {}, svg), line: el("g", {}, svg), point: el("g", {}, svg), label: el("g", {}, svg) };
-  const els = {};
-  const pointEls = [];
   for (const p of PLACES) {
     const isPoint = p.kind === "city" || p.kind === "volcano";
     const layer = isPoint ? layers.point : layers[{ river: "line", sea: "sea", mountains: "mount" }[p.kind] || "area"];
@@ -82,12 +89,15 @@
     if (p.kind === "river" || p.kind === "sea") t.setAttribute("font-style", "italic");
     els[p.id] = { g, lbl: t };
   }
+  el("rect", { x: 0, y: 0, width: D.w, height: D.h, class: "frame" }, svg);
+  Object.assign(vb, { x: 0, y: 0, w: D.w, h: D.h });
+  }
 
   const mark = (id, c, on = true) => { els[id].g.classList.toggle(c, on); els[id].lbl.classList.toggle(c, on); };
   const clearAll = (...cs) => { for (const id in els) for (const c of cs) mark(id, c, false); };
 
   // ---------------------------------------------------------------- viewport (pan / zoom)
-  const vb = { x: 0, y: 0, w: D.w, h: D.h };
+  const vb = { x: 0, y: 0, w: 1, h: 1 };
   function upp() { // svg units per screen pixel
     const r = svg.getBoundingClientRect();
     return Math.max(vb.w / (r.width || 1), vb.h / (r.height || 1));
@@ -223,10 +233,10 @@
   function roundStart(mode) {
     const weak = PLACES.some(p => stat(p.id).right + stat(p.id).wrong > 0) && PLACES.some(p => stat(p.id).box < MASTER);
     panel.innerHTML = `<h2>${TITLES[mode]}</h2><p>${INTRO[mode]}</p>
-      ${mode === "type" ? macronToggle() : ""}
+      ${mode === "type" ? macronToggle() : ""}${plainToggle()}
       <button class="btn primary" id="go-all">Start: all ${PLACES.length}</button>
       ${weak ? `<button class="btn" id="go-weak">Practice weak spots (${PLACES.filter(p => stat(p.id).box < MASTER).length})</button>` : ""}`;
-    bindMacronToggle();
+    bindMacronToggle(); bindPlainToggle();
     panel.querySelector("#go-all").onclick = () => modeObj.begin(buildQueue(false));
     const gw = panel.querySelector("#go-weak");
     if (gw) gw.onclick = () => modeObj.begin(buildQueue(true));
@@ -248,7 +258,7 @@
 
   const TITLES = { explore: "Explore the map", find: "Find it", name: "Name it", type: "Type it", progress: "Your progress" };
   const INTRO = {
-    find: "I'll give you a name -- tap it on the map. Zoom in (pinch or +) for small places like Rhodus.",
+    find: "I'll give you a name -- tap it on the map. Zoom in (pinch or +) for small places.",
     name: "A place will glow gold on the map. Pick its Latin name.",
     type: "A place will glow gold. Type its Latin name. Spelling counts!",
   };
@@ -267,11 +277,13 @@
       panel.innerHTML = `<h2>Explore the map</h2>
         <p class="muted">Tap anything on the map to learn about it. Pinch or scroll to zoom, drag to move.</p>
         <label class="toggle"><input type="checkbox" id="lbls" ${svg.classList.contains("show-labels") ? "checked" : ""}> Show all names on map</label>
+        ${plainToggle()}
         ${p ? `<div class="card"><div class="latin">${esc(p.label)}</div><div class="en">${esc(p.en)} &middot; ${kindWord(p)}</div><p>${esc(p.fact)}</p></div>`
             : `<div class="card muted">Tip: turn names off and see how many you can say out loud before tapping.</div>`}
         <p class="muted">All ${PLACES.length} places:</p>
         <div class="row">${PLACES.map(q => `<button class="btn small" data-go="${q.id}">${esc(q.name)}</button>`).join("")}</div>`;
       panel.querySelector("#lbls").onchange = e => svg.classList.toggle("show-labels", e.target.checked);
+      bindPlainToggle();
       panel.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { this.pick(b.dataset.go); focusPlace(b.dataset.go, true); });
     },
     pick(id) { clearAll("picked"); mark(id, "picked"); this.render(id); },
@@ -386,6 +398,15 @@
     const t = norm(typed, m);
     return [p.name, ...p.alt].some(a => norm(a, m) === t);
   }
+  const isPlain = () => store.get("plain", true);
+  document.body.classList.toggle("plain", isPlain());
+  function plainToggle() {
+    return `<label class="toggle"><input type="checkbox" id="plain" ${isPlain() ? "checked" : ""}> Plain map, like the test</label>`;
+  }
+  function bindPlainToggle() {
+    const m = panel.querySelector("#plain");
+    if (m) m.onchange = e => { store.set("plain", e.target.checked); document.body.classList.toggle("plain", e.target.checked); };
+  }
   function macronToggle() {
     return `<label class="toggle"><input type="checkbox" id="mac" ${needMacrons() ? "checked" : ""}> Long marks count (ā ē ō) -- e.g. Alpēs Montēs</label>`;
   }
@@ -473,13 +494,18 @@
     render() {
       clearAll("revealed");
       PLACES.forEach(p => { if (stat(p.id).box >= MASTER) mark(p.id, "revealed"); });
-      const mastered = PLACES.filter(p => stat(p.id).box >= MASTER).length;
-      const rows = [...PLACES].sort((a, b) => stat(a.id).box - stat(b.id).box || a.name.localeCompare(b.name));
+      const every = ALL.order.flatMap(k => ALL.maps[k].places);
+      const mastered = every.filter(p => stat(p.id).box >= MASTER).length;
+      const table = k => {
+        const rows = [...ALL.maps[k].places].sort((a, b) => stat(a.id).box - stat(b.id).box || a.name.localeCompare(b.name));
+        return `<p class="muted" style="margin-top:14px"><b>${esc(ALL.maps[k].title)}</b> (workbook p. ${ALL.maps[k].page})</p>
+          <table class="prog">${rows.map(p => `<tr><td><b>${esc(p.name)}</b> <span class="muted">${esc(p.en)}</span></td><td class="stars">${stars(p.id)}</td></tr>`).join("")}</table>`;
+      };
       panel.innerHTML = `<h2>Your progress</h2>
-        <div class="big">${mastered} / ${PLACES.length} mastered</div>
-        <div class="bar"><div style="width:${100 * mastered / PLACES.length}%"></div></div>
+        <div class="big">${mastered} / ${every.length} mastered</div>
+        <div class="bar"><div style="width:${100 * mastered / every.length}%"></div></div>
         <p class="muted">Each right answer on the first try earns a star; a miss takes one away. 3 stars = mastered (shown green on the map).</p>
-        <table class="prog">${rows.map(p => `<tr><td><b>${esc(p.name)}</b> <span class="muted">${esc(p.en)}</span></td><td class="stars">${stars(p.id)}</td></tr>`).join("")}</table>
+        ${[mapKey, ...ALL.order.filter(k => k !== mapKey)].map(table).join("")}
         <p><button class="btn small" id="reset">Reset progress</button></p>`;
       panel.querySelector("#reset").onclick = () => {
         if (confirm("Erase all stars and start over?")) { stats = {}; store.set("stats", stats); this.render(); }
@@ -496,6 +522,24 @@
   }
   document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 
+  const mapNav = document.getElementById("maps");
+  ALL.order.forEach((k, i) => {
+    const b = document.createElement("button");
+    b.dataset.map = k;
+    b.textContent = `Map ${i + 1}: ${k === "west" ? "West" : "East"}`;
+    b.onclick = () => switchMap(k);
+    mapNav.appendChild(b);
+  });
+  function switchMap(k) {
+    if (modeObj.exit) modeObj.exit();
+    mapKey = k; store.set("map", k);
+    mapNav.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.map === k));
+    buildMap(); applyVB();
+    if (modeObj.enter) modeObj.enter();
+  }
+
+  buildMap();
+  mapNav.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.map === mapKey));
   applyVB();
   new ResizeObserver(applyVB).observe(svg);
   setMode("explore");

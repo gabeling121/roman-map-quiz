@@ -32,9 +32,11 @@ nav button {
   background: rgba(255,255,255,.15); color: #fff; cursor: pointer;
 }
 nav button.on { background: var(--gold); color: var(--ink); font-weight: bold; }
+#maps button.on { background: #fff; color: var(--red); }
+#maps { padding-right: 8px; border-right: 1px solid #fff5; }
 
 main { flex: 1; display: flex; min-height: 0; }
-#mapwrap { flex: 1; position: relative; min-width: 0; background: var(--sea); }
+#mapwrap { flex: 1; position: relative; min-width: 0; min-height: 0; background: var(--sea); }
 #map { width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
 #map.dragging { cursor: grabbing; }
 #zoom { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
@@ -72,6 +74,20 @@ main { flex: 1; display: flex; min-height: 0; }
 
 .place:hover .region { fill-opacity: .35; }
 .place:hover .riverline { stroke-width: 3.5; }
+.frame { fill: none; stroke: #222; stroke-width: 1.5; vector-effect: non-scaling-stroke; pointer-events: none; }
+
+/* Plain mode: black lines on white, like the workbook / test map */
+.plain #mapwrap { background: #fff; }
+.plain .land { fill: #fff; stroke: #111; stroke-width: .9; }
+.plain .lake { fill: #fff; stroke: #111; }
+.plain .bgriver { stroke: #111; opacity: .9; stroke-width: .8; }
+.plain .riverline { stroke: #111; stroke-width: .8; }
+.plain .region, .plain .sea .region, .plain .mount .region { fill: #888; fill-opacity: 0; stroke: none; }
+.plain .place:hover .region { fill-opacity: .08; }
+.plain .place:hover .riverline { stroke-width: 2; }
+.plain .decor { display: none; }
+.plain #map:not(.show-labels) .dot, .plain #map:not(.show-labels) .volc { display: none; }
+.plain #map .place.revealed .dot, .plain #map .place.wrong .dot { display: inline; }
 
 .lbl {
   font-size: var(--lbl); font-weight: bold; fill: var(--ink); pointer-events: none;
