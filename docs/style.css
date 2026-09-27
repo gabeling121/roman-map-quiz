@@ -86,8 +86,7 @@ main { flex: 1; display: flex; min-height: 0; }
 .plain .place:hover .region { fill-opacity: .08; }
 .plain .place:hover .riverline { stroke-width: 2; }
 .plain .decor { display: none; }
-.plain #map:not(.show-labels) .dot, .plain #map:not(.show-labels) .volc { display: none; }
-.plain #map .place.revealed .dot, .plain #map .place.wrong .dot { display: inline; }
+.plain .dot, .plain .volc { fill: #111; }
 
 .lbl {
   font-size: var(--lbl); font-weight: bold; fill: var(--ink); pointer-events: none;
