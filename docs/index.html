@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Orbis Terrārum Rōmānus -- Map Quiz</title>
+<meta name="theme-color" content="#8c1c22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Roman Map">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Orbis Terrārum Rōmānus</h1>
+  <nav id="modes">
+    <button data-mode="explore" class="on">Explore</button>
+    <button data-mode="find">Find it</button>
+    <button data-mode="name">Name it</button>
+    <button data-mode="type">Type it</button>
+    <button data-mode="progress">Progress</button>
+  </nav>
+</header>
+
+<main>
+  <div id="mapwrap">
+    <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="zoom">
+      <button id="zin" aria-label="Zoom in">+</button>
+      <button id="zout" aria-label="Zoom out">&minus;</button>
+      <button id="zreset" aria-label="Show whole map">&#8962;</button>
+    </div>
+  </div>
+
+  <aside id="panel"></aside>
+</main>
+
+<script src="mapdata.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+build/*.geojson
+build/__pycache__/
+.claude/
