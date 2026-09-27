@@ -1,5 +1,5 @@
 // Offline support: cache the app shell, work offline.
-const CACHE = "roman-map-v4";
+const CACHE = "roman-map-v5";
 const FILES = ["./", "index.html", "help.html", "style.css", "app.js", "mapdata.js", "manifest.json",
   "icon-180.png", "icon-192.png", "icon-512.png"];
 
@@ -17,7 +17,7 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   e.respondWith(caches.open(CACHE).then(cache =>
-    fetch(e.request).then(res => {
+    fetch(e.request, { cache: "no-cache" }).then(res => {
       if (res.ok) cache.put(e.request, res.clone());
       return res;
     }).catch(() => cache.match(e.request, { ignoreSearch: true }))

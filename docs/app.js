@@ -55,7 +55,7 @@
     t.textContent = d.t;
   }
 
-  const layers = { sea: el("g", {}, svg), area: el("g", {}, svg), mount: el("g", {}, svg), line: el("g", {}, svg), point: el("g", {}, svg), label: el("g", {}, svg) };
+  const layers = { sea: el("g", {}, svg), area: el("g", {}, svg), mount: el("g", {}, svg), line: el("g", { "clip-path": "url(#frameClip)" }, svg), point: el("g", {}, svg), label: el("g", {}, svg) };
   for (const p of PLACES) {
     const isPoint = p.kind === "city" || p.kind === "volcano";
     const layer = isPoint ? layers.point : layers[{ river: "line", sea: "sea", mountains: "mount" }[p.kind] || "area"];
@@ -120,8 +120,8 @@
     svg.classList.toggle("show-labels", withNames);
     document.body.classList.add("plain", "printing");
     document.getElementById("printtitle").textContent =
-      `${D.title} (workbook p. ${D.page})${withNames ? " -- Answer key" : ""}`;
-    Object.assign(vb, { x: 0, y: 0, w: D.w, h: D.h });
+      `${D.title} (p. ${D.page})${withNames ? " -- Answer key" : ""}`;
+    Object.assign(vb, { x: -4, y: -4, w: D.w + 8, h: D.h + 8 }); // small margin so the frame line prints
     applyVB();
     setTimeout(() => window.print(), 60);
   }
@@ -563,6 +563,12 @@
   applyVB();
   new ResizeObserver(applyVB).observe(svg);
   setMode("explore");
+  // Direct print link, e.g. index.html#print=blank&map=east (also used to test printing)
+  const ph = new URLSearchParams(location.hash.slice(1));
+  if (ph.get("print")) {
+    if (ph.get("map") && ALL.maps[ph.get("map")]) switchMap(ph.get("map"));
+    printMap(ph.get("print") === "key");
+  }
 
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").catch(() => {});
