@@ -1,6 +1,6 @@
 // Offline support: cache the app shell, work offline.
-const CACHE = "roman-map-v3";
-const FILES = ["./", "index.html", "style.css", "app.js", "mapdata.js", "manifest.json",
+const CACHE = "roman-map-v4";
+const FILES = ["./", "index.html", "help.html", "style.css", "app.js", "mapdata.js", "manifest.json",
   "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {

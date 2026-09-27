@@ -74,13 +74,9 @@
     } else {
       const hit = el("circle", { cx: p.at[0], cy: p.at[1], class: "hit" }, g);
       const ring = el("circle", { cx: p.at[0], cy: p.at[1], r: 6, class: "ring" }, g);
-      let mark;
-      if (p.kind === "volcano") {
-        mark = el("path", { class: "volc" }, g);
-      } else {
-        mark = el("circle", { cx: p.at[0], cy: p.at[1], class: "dot" }, g);
-      }
-      pointEls.push({ c: hit, r: 13 }, { c: mark, r: 4.5, volc: p.kind === "volcano", at: p.at });
+      // Vesuvius is drawn as a plain dot too, matching the test map
+      const mark = el("circle", { cx: p.at[0], cy: p.at[1], class: "dot" }, g);
+      pointEls.push({ c: hit, r: 13 }, { c: mark, r: 4.5 });
       void ring;
     }
     const [lx, ly] = p.lab || (isPoint ? [p.at[0] + 8, p.at[1] + 4] : p.at);
@@ -109,16 +105,36 @@
     vb.x = Math.min(Math.max(vb.x, -vb.w * 0.5), D.w - vb.w * 0.5);
     vb.y = Math.min(Math.max(vb.y, -vb.h * 0.5), D.h - vb.h * 0.5);
     svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-    const u = upp();
+    // When printing, size dots and names for a letter-size page instead of the screen
+    const u = printing ? D.w / 680 : upp();
     svg.style.setProperty("--lbl", (14 * u).toFixed(2) + "px");
-    for (const pe of pointEls) {
-      const r = pe.r * u;
-      if (pe.volc) {
-        const [x, y] = pe.at, s = r * 1.5;
-        pe.c.setAttribute("d", `M${x - s},${y + s * 0.8}L${x},${y - s}L${x + s},${y + s * 0.8}Z`);
-      } else pe.c.setAttribute("r", r);
-    }
+    for (const pe of pointEls) pe.c.setAttribute("r", pe.r * u);
   }
+
+  // ---------------------------------------------------------------- printing
+  let printing = false, beforePrint = null;
+  function printMap(withNames) {
+    beforePrint = { vb: { ...vb }, labels: svg.classList.contains("show-labels"), plain: document.body.classList.contains("plain") };
+    printing = true;
+    clearAll("picked");
+    svg.classList.toggle("show-labels", withNames);
+    document.body.classList.add("plain", "printing");
+    document.getElementById("printtitle").textContent =
+      `${D.title} (workbook p. ${D.page})${withNames ? " -- Answer key" : ""}`;
+    Object.assign(vb, { x: 0, y: 0, w: D.w, h: D.h });
+    applyVB();
+    setTimeout(() => window.print(), 60);
+  }
+  window.addEventListener("afterprint", () => {
+    if (!beforePrint) return;
+    printing = false;
+    document.body.classList.remove("printing");
+    document.body.classList.toggle("plain", beforePrint.plain);
+    svg.classList.toggle("show-labels", beforePrint.labels);
+    Object.assign(vb, beforePrint.vb);
+    beforePrint = null;
+    applyVB();
+  });
   function toSvg(cx, cy) {
     const pt = new DOMPoint(cx, cy).matrixTransform(svg.getScreenCTM().inverse());
     return [pt.x, pt.y];
@@ -278,12 +294,16 @@
         <p class="muted">Tap anything on the map to learn about it. Pinch or scroll to zoom, drag to move.</p>
         <label class="toggle"><input type="checkbox" id="lbls" ${svg.classList.contains("show-labels") ? "checked" : ""}> Show all names on map</label>
         ${plainToggle()}
+        <div class="row"><button class="btn small" id="print-blank">Print blank map</button>
+          <button class="btn small" id="print-key">Print answer key</button></div>
         ${p ? `<div class="card"><div class="latin">${esc(p.label)}</div><div class="en">${esc(p.en)} &middot; ${kindWord(p)}</div><p>${esc(p.fact)}</p></div>`
             : `<div class="card muted">Tip: turn names off and see how many you can say out loud before tapping.</div>`}
         <p class="muted">All ${PLACES.length} places:</p>
         <div class="row">${PLACES.map(q => `<button class="btn small" data-go="${q.id}">${esc(q.name)}</button>`).join("")}</div>`;
       panel.querySelector("#lbls").onchange = e => svg.classList.toggle("show-labels", e.target.checked);
       bindPlainToggle();
+      panel.querySelector("#print-blank").onclick = () => printMap(false);
+      panel.querySelector("#print-key").onclick = () => printMap(true);
       panel.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { this.pick(b.dataset.go); focusPlace(b.dataset.go, true); });
     },
     pick(id) { clearAll("picked"); mark(id, "picked"); this.render(id); },
