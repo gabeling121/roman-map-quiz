@@ -73,8 +73,8 @@ main { flex: 1; display: flex; min-height: 0; }
 .volc { fill: #b33a1f; stroke: #fff; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
 .hit { fill: transparent; }
 
-.place:hover .region { fill-opacity: .35; }
-.place:hover .riverline { stroke-width: 3.5; }
+:where(body:not(.nohints)) .place:hover .region { fill-opacity: .35; }
+:where(body:not(.nohints)) .place:hover .riverline { stroke-width: 3.5; }
 .frame { fill: none; stroke: #222; stroke-width: 1.5; vector-effect: non-scaling-stroke; pointer-events: none; }
 
 /* Plain mode: black lines on white, like the workbook / test map */
@@ -84,8 +84,8 @@ main { flex: 1; display: flex; min-height: 0; }
 .plain .bgriver { stroke: #111; opacity: .9; stroke-width: .8; }
 .plain .riverline { stroke: #111; stroke-width: .8; }
 .plain .region, .plain .sea .region, .plain .mount .region { fill: #888; fill-opacity: 0; stroke: none; }
-.plain .place:hover .region { fill-opacity: .08; }
-.plain .place:hover .riverline { stroke-width: 2; }
+:where(body.plain:not(.nohints)) .place:hover .region { fill-opacity: .08; }
+:where(body.plain:not(.nohints)) .place:hover .riverline { stroke-width: 2; }
 .plain .decor { display: none; }
 .plain .dot, .plain .volc { fill: #111; }
 

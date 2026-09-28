@@ -325,9 +325,10 @@
       const p = byId[r.queue[r.i]];
       r.tries = 0; r.busy = false;
       panel.innerHTML = `${roundHeader(r)}<p class="muted">Tap on the map:</p>
-        <div class="big">${esc(p.name)}</div><p class="muted">(${kindWord(p)})</p>
-        <div class="fb" id="fb"></div><button class="btn small" id="skip">Show me</button>`;
-      panel.querySelector("#skip").onclick = () => this.reveal();
+        <div class="big">${esc(p.name)}</div>${hintsOn() ? `<p class="muted">(${kindWord(p)})</p>` : ""}
+        <div class="fb" id="fb"></div>${hintsOn() ? `<button class="btn small" id="skip">Show me</button>` : ""}`;
+      const sk = panel.querySelector("#skip");
+      if (sk) sk.onclick = () => this.reveal();
     },
     reveal() {
       const r = this.r, id = r.queue[r.i];
@@ -379,7 +380,7 @@
       const same = shuffle(PLACES.filter(q => q.id !== p.id && group(q) === group(p)));
       const other = shuffle(PLACES.filter(q => q.id !== p.id && group(q) !== group(p)));
       const opts = shuffle([p, ...same.concat(other).slice(0, 3)]);
-      panel.innerHTML = `${roundHeader(r)}<p>What is the <b>glowing</b> ${kindWord(p)} called?</p>
+      panel.innerHTML = `${roundHeader(r)}<p>What is the <b>glowing</b> ${kw(p)} called?</p>
         <div class="choices">${opts.map(o => `<button class="btn" data-a="${o.id}">${esc(o.name)}</button>`).join("")}</div>
         <div class="fb" id="fb"></div><div id="after"></div>`;
       panel.querySelectorAll("[data-a]").forEach(b => b.onclick = () => this.answer(b.dataset.a));
@@ -420,12 +421,19 @@
   }
   const isPlain = () => store.get("plain", true);
   document.body.classList.toggle("plain", isPlain());
+  // Hints (off by default): kind of place in the question, "Show me", the letter Hint button, hover shading
+  const hintsOn = () => store.get("hints", false);
+  document.body.classList.toggle("nohints", !hintsOn());
+  const kw = p => hintsOn() ? kindWord(p) : "place";
   function plainToggle() {
-    return `<label class="toggle"><input type="checkbox" id="plain" ${isPlain() ? "checked" : ""}> Plain map, like the test</label>`;
+    return `<label class="toggle"><input type="checkbox" id="plain" ${isPlain() ? "checked" : ""}> Plain map, like the test</label>
+      <label class="toggle"><input type="checkbox" id="hints" ${hintsOn() ? "checked" : ""}> Hints (city / river / island, Show me, Hint)</label>`;
   }
   function bindPlainToggle() {
     const m = panel.querySelector("#plain");
     if (m) m.onchange = e => { store.set("plain", e.target.checked); document.body.classList.toggle("plain", e.target.checked); };
+    const h = panel.querySelector("#hints");
+    if (h) h.onchange = e => { store.set("hints", e.target.checked); document.body.classList.toggle("nohints", !e.target.checked); };
   }
   function macronToggle() {
     return `<label class="toggle"><input type="checkbox" id="mac" ${needMacrons() ? "checked" : ""}> Long marks count (ā ē ō) -- e.g. Alpēs Montēs</label>`;
@@ -458,15 +466,16 @@
       const p = byId[r.queue[r.i]];
       r.wrong = false; r.hint = 0; r.done = false;
       mark(p.id, "target"); focusPlace(p.id);
-      panel.innerHTML = `${roundHeader(r)}<p>Type the Latin name of the <b>glowing</b> ${kindWord(p)}:</p>
+      panel.innerHTML = `${roundHeader(r)}<p>Type the Latin name of the <b>glowing</b> ${kw(p)}:</p>
         <input class="answer" id="ans" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
         <div class="macrons">${["ā", "ē", "ī", "ō", "ū"].map(c => `<button data-c="${c}" tabindex="-1">${c}</button>`).join("")}</div>
-        <div class="row"><button class="btn primary" id="check">Check</button><button class="btn small" id="hint">Hint</button></div>
+        <div class="row"><button class="btn primary" id="check">Check</button>${hintsOn() ? `<button class="btn small" id="hint">Hint</button>` : ""}</div>
         <div class="fb" id="fb"></div><div id="after"></div>`;
       const inp = panel.querySelector("#ans");
       inp.addEventListener("keydown", e => { if (e.key === "Enter") this.check(); });
       panel.querySelector("#check").onclick = () => this.check();
-      panel.querySelector("#hint").onclick = () => {
+      const hb = panel.querySelector("#hint");
+      if (hb) hb.onclick = () => {
         r.hint++; r.wrong = true;
         inp.value = p.name.slice(0, r.hint); inp.focus();
       };
