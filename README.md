@@ -1,3 +1,5 @@
+> **Moved:** this study guide now lives in [study-guides](https://github.com/gabeling121/study-guides) at https://gabeling121.github.io/study-guides/7th-grade/roman-map/
+
 # Orbis Terrārum Rōmānus -- Map Quiz
 
 A study app for a Roman-world geography quiz. It works on Chromebook, iPad, and any browser.
